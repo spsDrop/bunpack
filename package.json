@@ -2,9 +2,10 @@
   "name": "bunpack",
   "module": "./src/index.ts",
   "type": "module",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "bin": {
-    "bunpack-serve": "./bin/bunpack-serve.ts"
+    "bunpack-serve": "./bin/bunpack-serve.ts",
+    "bunpack-build": "./bin/bunpack-build.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",

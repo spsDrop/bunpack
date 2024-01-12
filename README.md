@@ -1,15 +1,26 @@
 # bunpack
 
-To install dependencies:
+Setup:
 
 ```bash
-bun install
+bun add -D bunpack
 ```
 
 To run:
 
 ```bash
-bun run index.ts
+bunx bunpack-serve // In the same directory of your bunpack.config.ts
+bunx bunpack-build // In the same directory of your bunpack.config.ts
+bunx bunpack-serve -c ./some/path/to/bunpack.config.ts
 ```
 
-This project was created using `bun init` in bun v1.0.22. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+```typescript
+export interface BunpackConfig{
+    buildConfig: BunBuildConfig, // bun build config
+    devServer: {
+        watchDir: string,
+        port: number,
+        host: string
+    }
+}
+```

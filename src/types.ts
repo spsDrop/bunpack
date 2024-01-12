@@ -1,6 +1,6 @@
 export type BunBuildConfig = Parameters<typeof Bun.build>[0];
 
-export interface BunServeConfig{
+export interface BunpackConfig{
     buildConfig: BunBuildConfig,
     devServer: {
         watchDir: string,

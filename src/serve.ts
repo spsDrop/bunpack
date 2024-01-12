@@ -17,10 +17,10 @@
 
 import path from "path";
 import fs from "fs";
-import { BunBuildConfig, BunServeConfig } from "./types";
+import { BunBuildConfig, BunpackConfig } from "./types";
 
 
-export async function serve(config: BunServeConfig) {
+export async function serve(config: BunpackConfig) {
     const headRewriter = new HTMLRewriter();
 
     headRewriter.on("head", {
