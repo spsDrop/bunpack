@@ -1,19 +1,28 @@
+#!/usr/bin/env bun
 import yargs from "yargs";
 import path from "path";
-import {serve} from "../src/serve"
+import { serve } from "../src/serve";
 
-const opts = await yargs(process.argv).option("configPath", {
-  alias: "c",
-  type: "string",
-  description: "Path to config file",
-  default: path.join(process.cwd(), "./bunpack.config.ts")
-}).parse();
+const opts = await yargs(process.argv)
+  .option("configPath", {
+    alias: "c",
+    type: "string",
+    description: "Path to config file",
+    default: "./bunpack.config.ts",
+  })
+  .parse();
+
+console.log(opts.configPath);
 
 try {
-    const config = await import(opts.configPath)
-    serve(config);
+  const config = (
+    await import(
+      path.join(import.meta.dirname || process.cwd(), opts.configPath)
+    )
+  ).default;
+  console.log(config);
+  serve(config);
 } catch (e) {
-    console.error(e);
-    throw new Error("Could not load config file");
+  console.error(e);
+  throw new Error("Could not load config file");
 }
-
