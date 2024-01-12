@@ -1,0 +1,18 @@
+{
+  "name": "bunpack",
+  "module": "./src/index.ts",
+  "type": "module",
+  "bin": {
+    "bunpack-serve": "./bin/bunpack-serve.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/yargs": "^17.0.32"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "yarg": "^1.0.8"
+  }
+}
