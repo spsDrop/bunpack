@@ -2,7 +2,7 @@
   "name": "bunpack",
   "module": "./src/index.ts",
   "type": "module",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "bin": {
     "bunpack-serve": "./bin/bunpack-serve.ts",
     "bunpack-build": "./bin/bunpack-build.ts"
