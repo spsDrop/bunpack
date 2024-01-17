@@ -2,13 +2,14 @@
   "name": "bunpack",
   "module": "./src/index.ts",
   "type": "module",
-  "version": "0.0.6",
+  "version": "0.0.8",
   "bin": {
     "bunpack-serve": "./bin/bunpack-serve.ts",
     "bunpack-build": "./bin/bunpack-build.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/node": "^20.11.5",
     "@types/yargs": "^17.0.32"
   },
   "peerDependencies": {

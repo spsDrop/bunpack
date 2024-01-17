@@ -12,15 +12,12 @@ const opts = await yargs(process.argv)
   })
   .parse();
 
-console.log(opts.configPath);
-
 try {
   const config = (
     await import(
       path.join(import.meta.dirname || process.cwd(), opts.configPath)
     )
   ).default;
-  console.log(config);
   serve(config);
 } catch (e) {
   console.error(e);

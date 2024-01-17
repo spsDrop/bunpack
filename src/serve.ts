@@ -18,6 +18,7 @@
 import path from "path";
 import fs from "fs";
 import { BunBuildConfig, BunpackConfig } from "./types";
+import { createKeys } from "./key-gen";
 
 
 export async function serve(config: BunpackConfig) {
@@ -41,6 +42,7 @@ export async function serve(config: BunpackConfig) {
     Bun.serve({
         port: config.devServer.port,
         hostname: config.devServer.host,
+        tls: config.devServer.https ? await createKeys() : config.devServer.tls,
         async fetch(req) {
             const url = new URL(req.url);
             if (path.isAbsolute(url.pathname) && config.buildConfig.outdir) {
@@ -82,6 +84,7 @@ export async function serve(config: BunpackConfig) {
     const wsPort = 9000;
     const socketServer = Bun.serve({
         port: wsPort,
+        hostname: config.devServer.host,
         fetch(req, server) {
             // upgrade the request to a WebSocket
             if (server.upgrade(req)) {

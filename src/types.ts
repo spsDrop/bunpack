@@ -1,3 +1,5 @@
+import { TLSOptions } from "bun";
+
 export type BunBuildConfig = Parameters<typeof Bun.build>[0];
 
 export interface BunpackConfig{
@@ -6,5 +8,7 @@ export interface BunpackConfig{
         watchDir: string,
         port: number,
         host: string
+        tls?: TLSOptions,
+        https: boolean, // webpack style auto gen keys
     }
 }
