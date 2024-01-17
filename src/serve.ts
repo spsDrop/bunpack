@@ -30,7 +30,7 @@ export async function serve(config: BunpackConfig) {
             el.append(
                 `
             <script>
-                const reloadSocket = new WebSocket("ws://${config.devServer.host}:${wsPort}");
+                const reloadSocket = new WebSocket("ws://${config.devServer.host || "localhost"}:${wsPort}");
                 reloadSocket.onmessage = () => {location.href = location.href}
             </script>
         `,
