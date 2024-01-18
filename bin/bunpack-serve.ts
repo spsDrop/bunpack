@@ -13,12 +13,7 @@ const opts = await yargs(process.argv)
   .parse();
 
 try {
-  const config = (
-    await import(
-      path.join(import.meta.dirname || process.cwd(), opts.configPath)
-    )
-  ).default;
-  serve(config);
+  serve(path.join(import.meta.dirname || process.cwd(), opts.configPath));
 } catch (e) {
   console.error(e);
   throw new Error("Could not load config file");

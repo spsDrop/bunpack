@@ -4,6 +4,8 @@ export default {
     buildConfig:{
         entrypoints: ['./src/index.ts'],
         outdir: './public',
+        sourcemap: "external",
+        external: [""]
     },
     devServer: {
         port: 8080,

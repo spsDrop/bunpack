@@ -21,19 +21,35 @@ import { BunBuildConfig, BunpackConfig } from "./types";
 import { createKeys } from "./key-gen";
 
 
-export async function serve(config: BunpackConfig) {
-    const headRewriter = new HTMLRewriter();
+async function loadConfig(path: string): Promise<BunpackConfig> {
+    const config = (await import(path)).default;
+    return config;
+}
 
+export async function serve(configPath: string) {
+    const config = await loadConfig(configPath);
+    
+    const socketProtocol = config.devServer.https || config.devServer.tls ? 'wss' : 'ws';
+    
+    const headRewriter = new HTMLRewriter();
     headRewriter.on("head", {
         element(el) {
             console.log("appending");
             el.append(
-                `
-            <script>
-                const reloadSocket = new WebSocket("ws://${config.devServer.host || "localhost"}:${wsPort}");
-                reloadSocket.onmessage = () => {location.href = location.href}
-            </script>
-        `,
+                
+            `<script>
+                function connectToReloadSocket() {
+                    const reloadSocket = new WebSocket("${socketProtocol}://${config.devServer.host || "localhost"}:${wsPort}");
+                    reloadSocket.onmessage = () => {location.href = location.href};
+                    reloadSocket.onclose = function(e) {
+                        console.log('Reload Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
+                        setTimeout(function() {
+                            connectToReloadSocket();
+                        }, 5 * 1000);
+                    };
+                }
+                connectToReloadSocket();
+            </script>`,
                 { html: true },
             );
         },
@@ -70,7 +86,7 @@ export async function serve(config: BunpackConfig) {
             }
             console.log("serving fallback");
             const index = headRewriter.transform(
-                await Bun.file("./public/index.html").text(),
+                await Bun.file(path.join(config.buildConfig.outdir || './', "/index.html")).text(),
             );
             return new Response(index, {
                 headers: {
@@ -85,6 +101,7 @@ export async function serve(config: BunpackConfig) {
     const socketServer = Bun.serve({
         port: wsPort,
         hostname: config.devServer.host,
+        tls: config.devServer.https ? await createKeys() : config.devServer.tls,
         fetch(req, server) {
             // upgrade the request to a WebSocket
             if (server.upgrade(req)) {
@@ -106,6 +123,7 @@ export async function serve(config: BunpackConfig) {
     });
 
     async function build(buildConfig: BunBuildConfig) {
+        console.log(buildConfig)
         const start = Date.now();
 
         // buildConfig.plugins = buildConfig.plugins || [];
@@ -124,6 +142,13 @@ export async function serve(config: BunpackConfig) {
         console.log(results.logs);
         socketServer.publish(RELOAD_EVENT, "reload2");
     }
+
+    fs.watch(configPath).addListener("change", async () => {
+        const configUpdate = await loadConfig(configPath);
+        console.log({configUpdate})
+        config.buildConfig = configUpdate.buildConfig;
+        build(config.buildConfig);
+    });
 
     fs.watch(config.devServer.watchDir, { recursive: true }).addListener(
         "change",
