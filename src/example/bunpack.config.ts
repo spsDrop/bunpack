@@ -5,7 +5,12 @@ export default {
         entrypoints: ['./src/index.ts'],
         outdir: './public',
         sourcemap: "external",
-        external: [""]
+        external: [""],
+        naming: "[name].[hash].[ext]",
+        htmlTemplate: {
+            templatePath:'./src/index.html',
+            templateOutputPath: "./index.html"
+        }
     },
     devServer: {
         port: 8080,

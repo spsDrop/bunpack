@@ -1,4 +1,5 @@
 # bunpack
+A super light weight implementation of the basic function of webpack/vite as a UI development tool
 
 Setup:
 

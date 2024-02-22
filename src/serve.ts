@@ -15,31 +15,32 @@
  * from Adobe.
  ***************************************************************************/
 
-import path from "path";
-import fs from "fs";
-import { BunBuildConfig, BunpackConfig } from "./types";
-import { createKeys } from "./key-gen";
-
+import path from 'path'
+import fs from 'fs'
+import { BunBuildConfig, BunpackConfig } from './types'
+import { createKeys } from './key-gen'
+import { htmlTemplate } from './util/htmlTemplate'
 
 async function loadConfig(path: string): Promise<BunpackConfig> {
-    const config = (await import(path)).default;
-    return config;
+    const config = (await import(path)).default
+    return config
 }
 
 export async function serve(configPath: string) {
-    const config = await loadConfig(configPath);
-    
-    const socketProtocol = config.devServer.https || config.devServer.tls ? 'wss' : 'ws';
-    
-    const headRewriter = new HTMLRewriter();
-    headRewriter.on("head", {
+    const config = await loadConfig(configPath)
+
+    const socketProtocol =
+        config.devServer.https || config.devServer.tls ? 'wss' : 'ws'
+
+    const headRewriter = new HTMLRewriter()
+    headRewriter.on('head', {
         element(el) {
-            console.log("appending");
             el.append(
-                
-            `<script>
+                `<script>
                 function connectToReloadSocket() {
-                    const reloadSocket = new WebSocket("${socketProtocol}://${config.devServer.host || "localhost"}:${wsPort}");
+                    const reloadSocket = new WebSocket("${socketProtocol}://${
+                    config.devServer.host || 'localhost'
+                }:${wsPort}");
                     reloadSocket.onmessage = () => {location.href = location.href};
                     reloadSocket.onclose = function(e) {
                         console.log('Reload Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
@@ -50,54 +51,72 @@ export async function serve(configPath: string) {
                 }
                 connectToReloadSocket();
             </script>`,
-                { html: true },
-            );
+                { html: true }
+            )
         },
-    });
+    })
 
     Bun.serve({
         port: config.devServer.port,
-        hostname: config.devServer.host,
+        hostname: config.devServer.host || 'localhost',
         tls: config.devServer.https ? await createKeys() : config.devServer.tls,
         async fetch(req) {
-            const url = new URL(req.url);
+            const url = new URL(req.url)
             if (path.isAbsolute(url.pathname) && config.buildConfig.outdir) {
                 try {
                     const localPath = path.join(
                         config.buildConfig.outdir,
-                        url.pathname,
-                    );
+                        url.pathname
+                    )
                     if (
                         fs.existsSync(localPath) &&
                         fs.statSync(localPath).isFile()
                     ) {
-                        return new Response(
+                        const res = new Response(
                             Bun.file(
                                 path.join(
                                     config.buildConfig.outdir,
-                                    url.pathname,
-                                ),
-                            ),
-                        );
+                                    url.pathname
+                                )
+                            )
+                        )
+                        if (
+                            url.pathname.match(/\.js$/) && 
+                            await Bun.file(path.join(
+                                config.buildConfig.outdir,
+                                url.pathname+".map",
+                            )).exists()
+                        ) {
+                            res.headers.append("SourceMap", url.pathname+".map")
+                        }
+                        return res
                     }
                 } catch (e) {
-                    console.log(e);
+                    console.log(e)
                 }
             }
-            console.log("serving fallback");
+            console.log('serving fallback', {path: url.pathname})
             const index = headRewriter.transform(
-                await Bun.file(path.join(config.buildConfig.outdir || './', "/index.html")).text(),
-            );
+                await Bun.file(
+                    path.join(config.buildConfig.outdir || './', '/index.html')
+                ).text()
+            )
             return new Response(index, {
                 headers: {
-                    "Content-Type": "text/html",
+                    'Content-Type': 'text/html',
                 },
-            });
+            })
         },
-    });
+    })
 
-    const RELOAD_EVENT = "reload";
-    const wsPort = 9000;
+    console.log(
+        `Dev server listening on ${
+            config.devServer.https ? 'https' : 'http'
+        }://${config.devServer.host || 'localhost'}:${config.devServer.port}`
+    )
+
+    const RELOAD_EVENT = 'reload'
+    const wsPort = 9000
     const socketServer = Bun.serve({
         port: wsPort,
         hostname: config.devServer.host,
@@ -105,57 +124,58 @@ export async function serve(configPath: string) {
         fetch(req, server) {
             // upgrade the request to a WebSocket
             if (server.upgrade(req)) {
-                return; // do not return a Response
+                return // do not return a Response
             }
-            return new Response("Upgrade failed :(", { status: 500 });
+            return new Response('Upgrade failed :(', { status: 500 })
         },
         websocket: {
             message(ws, message) {
                 // do nothing
             },
             open(ws) {
-                ws.subscribe(RELOAD_EVENT);
+                ws.subscribe(RELOAD_EVENT)
             },
             close(ws) {
-                ws.unsubscribe(RELOAD_EVENT);
+                ws.unsubscribe(RELOAD_EVENT)
             },
         }, // handlers
-    });
+    })
 
     async function build(buildConfig: BunBuildConfig) {
-        console.log(buildConfig)
-        const start = Date.now();
+        const start = Date.now()
 
-        // buildConfig.plugins = buildConfig.plugins || [];
-        //buildConfig.plugins.push(reloadPlugin);
+        const results = await Bun.build(buildConfig)
 
-        const results = await Bun.build(buildConfig);
-
-        console.log(`Build took ${Date.now() - start}ms`);
-        console.log("Build artifacts");
+        console.log(`Build took ${Date.now() - start}ms`)
+        console.log('Build artifacts')
         results.outputs.forEach((output) => {
-            const stats = fs.statSync(output.path);
+            const stats = fs.statSync(output.path)
             console.log(
-                `${path.basename(output.path)} [${output.hash}] ${stats.size}`,
-            );
-        });
-        console.log(results.logs);
-        socketServer.publish(RELOAD_EVENT, "reload2");
+                `${path.basename(output.path)} [${output.hash}] ${stats.size}`
+            )
+        })
+        console.log(results.logs)
+
+        if (config.buildConfig.htmlTemplate) {
+            htmlTemplate(results, config.buildConfig)
+        }
+
+        socketServer.publish(RELOAD_EVENT, 'reload2')
     }
 
-    fs.watch(configPath).addListener("change", async () => {
-        const configUpdate = await loadConfig(configPath);
-        console.log({configUpdate})
-        config.buildConfig = configUpdate.buildConfig;
-        build(config.buildConfig);
-    });
+    fs.watch(configPath).addListener('change', async () => {
+        const configUpdate = await loadConfig(configPath)
+        console.log({ configUpdate })
+        config.buildConfig = configUpdate.buildConfig
+        build(config.buildConfig)
+    })
 
     fs.watch(config.devServer.watchDir, { recursive: true }).addListener(
-        "change",
+        'change',
         () => {
-            build(config.buildConfig);
-        },
-    );
+            build(config.buildConfig)
+        }
+    )
 
-    build(config.buildConfig);
+    build(config.buildConfig)
 }
