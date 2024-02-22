@@ -5,8 +5,8 @@
   "type": "module",
   "version": "0.0.12",
   "bin": {
-    "bunpack-build": "./bin/bunpack-build.ts",
-    "bunpack-serve": "./bin/bunpack-serve.ts"
+    "bunpack-build": "bin/bunpack-build.ts",
+    "bunpack-serve": "bin/bunpack-serve.ts"
   },
   "scripts": {
     "bunpack-build": "./bin/bunpack-build.ts",
