@@ -17,12 +17,14 @@
 
 import path from 'path'
 import fs from 'fs'
-import { BunBuildConfig, BunpackConfig } from './types'
+import { BunBuildConfig, BunpackBunBuildConfig, BunpackConfig } from './types'
 import { createKeys } from './key-gen'
 import { htmlTemplate } from './util/htmlTemplate'
+import { patchSourceMaps } from './util/patchSourceMaps'
 
 async function loadConfig(path: string): Promise<BunpackConfig> {
-    const config = (await import(path)).default
+    delete require.cache[path];
+    const config = require(path).default;
     return config
 }
 
@@ -141,10 +143,14 @@ export async function serve(configPath: string) {
         }, // handlers
     })
 
-    async function build(buildConfig: BunBuildConfig) {
+    async function build(buildConfig: BunpackBunBuildConfig) {
         const start = Date.now()
 
         const results = await Bun.build(buildConfig)
+
+        if (buildConfig.patchSourceMaps) {
+            await patchSourceMaps(results);
+        }
 
         console.log(`Build took ${Date.now() - start}ms`)
         console.log('Build artifacts')
@@ -156,8 +162,8 @@ export async function serve(configPath: string) {
         })
         console.log(results.logs)
 
-        if (config.buildConfig.htmlTemplate) {
-            htmlTemplate(results, config.buildConfig)
+        if (buildConfig.htmlTemplate) {
+            htmlTemplate(results, buildConfig)
         }
 
         socketServer.publish(RELOAD_EVENT, 'reload2')

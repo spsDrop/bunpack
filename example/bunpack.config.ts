@@ -1,4 +1,4 @@
-import { BunpackConfig } from "../types";
+import { BunpackConfig } from "../src/types";
 
 export default {
     buildConfig:{
@@ -7,6 +7,7 @@ export default {
         sourcemap: "external",
         external: [""],
         naming: "[name].[hash].[ext]",
+        patchSourceMaps: true,
         htmlTemplate: {
             templatePath:'./src/index.html',
             templateOutputPath: "./index.html"

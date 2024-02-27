@@ -3,14 +3,16 @@
   "module": "./src/index.ts",
   "types": "./src/index.ts",
   "type": "module",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "bin": {
     "bunpack-build": "bin/bunpack-build.ts",
     "bunpack-serve": "bin/bunpack-serve.ts"
   },
   "scripts": {
     "bunpack-build": "./bin/bunpack-build.ts",
-    "bunpack-serve": "./bin/bunpack-serve.ts"
+    "bunpack-serve": "./bin/bunpack-serve.ts",
+    "serve-example": "bun bunpack-serve -c example/bunpack.config.ts",
+    "build-example": "bun bunpack-build -c example/bunpack.config.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
