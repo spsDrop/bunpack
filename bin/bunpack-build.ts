@@ -3,7 +3,7 @@
 import yargs from 'yargs'
 import path from 'path'
 import type { BunpackConfig } from '../src'
-import { htmlTemplate } from '../src/util/htmlTemplate'
+import { bunBuild, esbuildBuild } from '../src/builds'
 
 const opts = await yargs(process.argv)
     .option('configPath', {
@@ -22,11 +22,15 @@ try {
             path.resolve(path.basename(opts.configPath))
         )
     ).default as BunpackConfig
-    const results = await Bun.build(config.buildConfig)
 
-    if (config.buildConfig.htmlTemplate) {
-        htmlTemplate(results, config.buildConfig)
+    if (config.bunBundleConfig !== undefined) {
+        await bunBuild(config.bunBundleConfig);
     }
+
+    if (config.esbuildBundleConfig) {
+        await esbuildBuild(config.esbuildBundleConfig);
+    }
+
 } catch (e) {
     console.error(e)
     throw new Error('Could not load config file')

@@ -15,6 +15,8 @@ const opts = await yargs(process.argv)
 
 process.chdir(path.dirname(path.resolve(opts.configPath)))
 
+console.log(process.cwd())
+
 try {
     serve(path.resolve(path.basename(opts.configPath)))
 } catch (e) {

@@ -1,6 +1,7 @@
 import { BuildOutput } from "bun";
-import { BunpackBunBuildConfig } from "../types";
+import { BunpackBunBuildConfig, BunpackBundleOptions } from "../types";
 import path from "path";
+import { BuildResult } from "esbuild";
 
 function argsToString(opts: Record<string, string> = {}) {
   return Object.keys(opts)
@@ -8,34 +9,35 @@ function argsToString(opts: Record<string, string> = {}) {
     .join(" ");
 }
 
-function absoluteToRelative(absolutePath: string, config: BunpackBunBuildConfig) {
-    const root = path.join(process.cwd(), config.outdir || "./");
+export function absoluteToRelative(absolutePath: string, outdir: string) {
+    const root = path.join(process.cwd(), outdir || "./");
     return absolutePath.replace(root, "");
 }
 
 export async function htmlTemplate(
-  build: BuildOutput,
-  config: BunpackBunBuildConfig
+  outputs: string[],
+  templateConfig: NonNullable<BunpackBundleOptions["htmlTemplate"]>,
+  outdir: string,
 ) {
   const rewriter = new HTMLRewriter();
   rewriter.on("head", {
     element: (el) => {
-      build.outputs
-        .filter((output) => output.path.match(/js$/))
+      outputs
+        .filter((output) => output.match(/js$/))
         .forEach((output) => {
           el.append(
-            `<script src="${absoluteToRelative(output.path, config) }" ${argsToString(
-              config.htmlTemplate?.scriptTagArgs
+            `<script src="${output }" ${argsToString(
+              templateConfig.scriptTagArgs
             )}></script>`,
             {html: true}
           );
         });
-      build.outputs
-        .filter((output) => output.path.match(/css$/))
+      outputs
+        .filter((output) => output.match(/css$/))
         .forEach((output) => {
           el.append(
-            `<link rel="stylesheet" href="${output.path}" ${argsToString(
-              config.htmlTemplate?.styleTagArgs
+            `<link rel="stylesheet" href="${output}" ${argsToString(
+              templateConfig.styleTagArgs
             )}>`,
             {html: true}
           );
@@ -45,14 +47,14 @@ export async function htmlTemplate(
 
   const transformedTemplate = rewriter.transform(
     await Bun.file(
-      path.join(config.htmlTemplate?.templatePath || "./index.html")
+      path.join(templateConfig.templatePath || "./index.html")
     ).text()
   );
 
   Bun.write(
     path.join(
-      config.outdir || "./",
-      config.htmlTemplate?.templateOutputPath || "./index.html"
+      outdir || "./",
+      templateConfig.templateOutputPath || "./index.html"
     ),
     transformedTemplate
   );

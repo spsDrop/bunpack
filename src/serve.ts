@@ -17,19 +17,28 @@
 
 import path from 'path'
 import fs from 'fs'
-import { BunBuildConfig, BunpackBunBuildConfig, BunpackConfig } from './types'
+import {
+    BunpackConfig,
+} from './types'
 import { createKeys } from './key-gen'
-import { htmlTemplate } from './util/htmlTemplate'
-import { patchSourceMaps } from './util/patchSourceMaps'
+import { bunBuild, esbuildBuild } from './builds'
 
 async function loadConfig(path: string): Promise<BunpackConfig> {
-    delete require.cache[path];
-    const config = require(path).default;
+    delete require.cache[path]
+    const config: BunpackConfig = require(path).default
+    if (!config.bunBundleConfig && !config.esbuildBundleConfig) {
+        throw new Error("No build bundle config defined");
+    }
     return config
 }
 
 export async function serve(configPath: string) {
     const config = await loadConfig(configPath)
+
+    const outdir =
+        config.bunBundleConfig?.outdir ||
+        config.esbuildBundleConfig?.outdir ||
+        './public'
 
     const socketProtocol =
         config.devServer.https || config.devServer.tls ? 'wss' : 'ws'
@@ -64,32 +73,26 @@ export async function serve(configPath: string) {
         tls: config.devServer.https ? await createKeys() : config.devServer.tls,
         async fetch(req) {
             const url = new URL(req.url)
-            if (path.isAbsolute(url.pathname) && config.buildConfig.outdir) {
+            if (path.isAbsolute(url.pathname) && outdir) {
                 try {
-                    const localPath = path.join(
-                        config.buildConfig.outdir,
-                        url.pathname
-                    )
+                    const localPath = path.join(outdir, url.pathname)
                     if (
                         fs.existsSync(localPath) &&
                         fs.statSync(localPath).isFile()
                     ) {
                         const res = new Response(
-                            Bun.file(
-                                path.join(
-                                    config.buildConfig.outdir,
-                                    url.pathname
-                                )
-                            )
+                            Bun.file(path.join(outdir, url.pathname))
                         )
                         if (
-                            url.pathname.match(/\.js$/) && 
-                            await Bun.file(path.join(
-                                config.buildConfig.outdir,
-                                url.pathname+".map",
-                            )).exists()
+                            url.pathname.match(/\.js$/) &&
+                            (await Bun.file(
+                                path.join(outdir, url.pathname + '.map')
+                            ).exists())
                         ) {
-                            res.headers.append("SourceMap", url.pathname+".map")
+                            res.headers.append(
+                                'SourceMap',
+                                url.pathname + '.map'
+                            )
                         }
                         return res
                     }
@@ -97,11 +100,9 @@ export async function serve(configPath: string) {
                     console.log(e)
                 }
             }
-            console.log('serving fallback', {path: url.pathname})
+            console.log('serving fallback', { path: url.pathname })
             const index = headRewriter.transform(
-                await Bun.file(
-                    path.join(config.buildConfig.outdir || './', '/index.html')
-                ).text()
+                await Bun.file(path.join(outdir || './', '/index.html')).text()
             )
             return new Response(index, {
                 headers: {
@@ -143,45 +144,29 @@ export async function serve(configPath: string) {
         }, // handlers
     })
 
-    async function build(buildConfig: BunpackBunBuildConfig) {
-        const start = Date.now()
-
-        const results = await Bun.build(buildConfig)
-
-        if (buildConfig.patchSourceMaps) {
-            await patchSourceMaps(results);
+    async function build(conifg: BunpackConfig) {
+        if (config.bunBundleConfig) {
+            return bunBuild(config.bunBundleConfig);
         }
-
-        console.log(`Build took ${Date.now() - start}ms`)
-        console.log('Build artifacts')
-        results.outputs.forEach((output) => {
-            const stats = fs.statSync(output.path)
-            console.log(
-                `${path.basename(output.path)} [${output.hash}] ${stats.size}`
-            )
-        })
-        console.log(results.logs)
-
-        if (buildConfig.htmlTemplate) {
-            htmlTemplate(results, buildConfig)
+        if (config.esbuildBundleConfig) {
+            return esbuildBuild(config.esbuildBundleConfig);
         }
-
         socketServer.publish(RELOAD_EVENT, 'reload2')
     }
 
     fs.watch(configPath).addListener('change', async () => {
         const configUpdate = await loadConfig(configPath)
         console.log({ configUpdate })
-        config.buildConfig = configUpdate.buildConfig
-        build(config.buildConfig)
+        config.bunBundleConfig = configUpdate.bunBundleConfig
+        build(config)
     })
 
     fs.watch(config.devServer.watchDir, { recursive: true }).addListener(
         'change',
         () => {
-            build(config.buildConfig)
+            build(config)
         }
     )
 
-    build(config.buildConfig)
+    build(config)
 }

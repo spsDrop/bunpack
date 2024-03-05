@@ -3,7 +3,7 @@
   "module": "./src/index.ts",
   "types": "./src/index.ts",
   "type": "module",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "bin": {
     "bunpack-build": "bin/bunpack-build.ts",
     "bunpack-serve": "bin/bunpack-serve.ts"
@@ -12,7 +12,9 @@
     "bunpack-build": "./bin/bunpack-build.ts",
     "bunpack-serve": "./bin/bunpack-serve.ts",
     "serve-example": "bun bunpack-serve -c example/bunpack.config.ts",
-    "build-example": "bun bunpack-build -c example/bunpack.config.ts"
+    "build-example": "bun bunpack-build -c example/bunpack.config.ts",
+    "serve-es-example": "bun bunpack-serve -c example-esbuild/bunpack.config.ts",
+    "build-es-example": "bun bunpack-build -c example-esbuild/bunpack.config.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -23,6 +25,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "esbuild": "^0.20.1",
     "yargs": "^17.7.2"
   }
 }

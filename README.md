@@ -22,9 +22,7 @@ bun build-example
 ```
 
 ```typescript
-export type BunBuildConfig = Parameters<typeof Bun.build>[0]
-
-export interface BunpackBunBuildConfig extends BunBuildConfig {
+export interface BunpackBundleOptions {
     // Right now bun doesn't create correct trailing sourcemap url comments
     // Turning this on will enable a patching of all files with sourcemaps
     // The serve sets the SourceMap header as well but not all browser support it
@@ -38,8 +36,12 @@ export interface BunpackBunBuildConfig extends BunBuildConfig {
     }
 }
 
+export type BunpackBunBuildConfig = BunBuildConfig & BunpackBundleOptions
+export type BunpackEsbuildBuildConfig = BuildOptions & BunpackBundleOptions
+
 export interface BunpackConfig {
-    buildConfig: BunpackBunBuildConfig
+    bunBundleConfig?: BunpackBunBuildConfig
+    esbuildBundleConfig?: BunpackEsbuildBuildConfig
     devServer: {
         watchDir: string
         port: number

@@ -1,13 +1,14 @@
 import { BunpackConfig } from "../src/types";
 
 export default {
-    bunBundleConfig:{
-        entrypoints: ['./src/index.ts'],
+    esbuildBundleConfig:{
+        bundle: true,
+        metafile: true,
+        entryPoints: ['./src/index.ts'],
         outdir: './public',
         sourcemap: "external",
         external: [""],
-        naming: "[name].[hash].[ext]",
-        patchSourceMaps: true,
+        entryNames: "[name].[hash]",
         htmlTemplate: {
             templatePath:'./src/index.html',
             templateOutputPath: "./index.html"
