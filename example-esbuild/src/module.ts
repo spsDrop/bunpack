@@ -1,3 +1,3 @@
 export function sayHello() {
-    console.log('Hello bunpack');
+    console.log('Hello esbuild bunpack');
 }

@@ -146,10 +146,10 @@ export async function serve(configPath: string) {
 
     async function build(conifg: BunpackConfig) {
         if (config.bunBundleConfig) {
-            return bunBuild(config.bunBundleConfig);
+            await bunBuild(config.bunBundleConfig);
         }
         if (config.esbuildBundleConfig) {
-            return esbuildBuild(config.esbuildBundleConfig);
+            await esbuildBuild(config.esbuildBundleConfig);
         }
         socketServer.publish(RELOAD_EVENT, 'reload2')
     }
