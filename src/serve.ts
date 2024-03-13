@@ -144,20 +144,26 @@ export async function serve(configPath: string) {
         }, // handlers
     })
 
-    async function build(conifg: BunpackConfig) {
-        if (config.bunBundleConfig) {
-            await bunBuild(config.bunBundleConfig);
+    async function build(buildConfig: BunpackConfig) {
+        try {
+            if (buildConfig.bunBundleConfig) {
+                await bunBuild(buildConfig.bunBundleConfig);
+            }
+            if (buildConfig.esbuildBundleConfig) {
+                console.log(buildConfig.esbuildBundleConfig);
+                await esbuildBuild(buildConfig.esbuildBundleConfig);
+            }
+            socketServer.publish(RELOAD_EVENT, 'reload2')
+        } catch (e) {
+            console.error("Build error", e);
         }
-        if (config.esbuildBundleConfig) {
-            await esbuildBuild(config.esbuildBundleConfig);
-        }
-        socketServer.publish(RELOAD_EVENT, 'reload2')
     }
 
     fs.watch(configPath).addListener('change', async () => {
         const configUpdate = await loadConfig(configPath)
         console.log({ configUpdate })
         config.bunBundleConfig = configUpdate.bunBundleConfig
+        config.esbuildBundleConfig = configUpdate.esbuildBundleConfig
         build(config)
     })
 
