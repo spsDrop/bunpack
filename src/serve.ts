@@ -48,20 +48,26 @@ export async function serve(configPath: string) {
         element(el) {
             el.append(
                 `<script>
-                function connectToReloadSocket() {
-                    const reloadSocket = new WebSocket("${socketProtocol}://${
-                    config.devServer.host || 'localhost'
-                }:${wsPort}");
-                    reloadSocket.onmessage = () => {location.href = location.href};
-                    reloadSocket.onclose = function(e) {
-                        console.log('Reload Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
-                        setTimeout(function() {
-                            connectToReloadSocket();
-                        }, 5 * 1000);
-                    };
-                }
-                connectToReloadSocket();
-            </script>`,
+                    let disconnected = false;
+                    function connectToReloadSocket() {
+                        const reloadSocket = new WebSocket("${socketProtocol}://${config.devServer.host || 'localhost'}:${wsPort}");
+                        reloadSocket.onmessage = () => location.href = location.href;
+                        reloadSocket.onclose = function(e) {
+                            console.log('Reload Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
+                            setTimeout(function() {
+                                connectToReloadSocket();
+                            }, 5 * 1000);
+                            disconnected = true;
+                        };
+                        reloadSocket.onopen = () => {
+                            if (disconnected) {
+                                location.href = location.href;
+                            }
+                            disconnected = false;
+                        }
+                    }
+                    connectToReloadSocket();
+                </script>`,
                 { html: true }
             )
         },
@@ -107,6 +113,7 @@ export async function serve(configPath: string) {
             return new Response(index, {
                 headers: {
                     'Content-Type': 'text/html',
+                    'Max-Age': "0",
                 },
             })
         },
@@ -150,7 +157,6 @@ export async function serve(configPath: string) {
                 await bunBuild(buildConfig.bunBundleConfig);
             }
             if (buildConfig.esbuildBundleConfig) {
-                console.log(buildConfig.esbuildBundleConfig);
                 await esbuildBuild(buildConfig.esbuildBundleConfig);
             }
             socketServer.publish(RELOAD_EVENT, 'reload2')
@@ -161,7 +167,6 @@ export async function serve(configPath: string) {
 
     fs.watch(configPath).addListener('change', async () => {
         const configUpdate = await loadConfig(configPath)
-        console.log({ configUpdate })
         config.bunBundleConfig = configUpdate.bunBundleConfig
         config.esbuildBundleConfig = configUpdate.esbuildBundleConfig
         build(config)
