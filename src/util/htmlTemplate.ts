@@ -11,7 +11,7 @@ function argsToString(opts: Record<string, string> = {}) {
 
 export function absoluteToRelative(absolutePath: string, outdir: string) {
     const root = path.join(process.cwd(), outdir || "./");
-    return absolutePath.replace(root, "");
+    return absolutePath.replace(root, ".");
 }
 
 export async function htmlTemplate(
