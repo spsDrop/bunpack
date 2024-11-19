@@ -49,9 +49,10 @@ export async function serve(configPath: string) {
             el.append(
                 `<script>
                     let disconnected = false;
+                    const hostname = window.location.hostname;
                     function connectToReloadSocket() {
-                        const reloadSocket = new WebSocket("${socketProtocol}://${config.devServer.host || 'localhost'}:${wsPort}");
-                        reloadSocket.onmessage = () => location.href = location.href;
+                        const reloadSocket = new WebSocket("${socketProtocol}://" + hostname + ":${wsPort}");
+                        reloadSocket.onmessage = () => location.reload();
                         reloadSocket.onclose = function(e) {
                             console.log('Reload Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
                             setTimeout(function() {
@@ -75,7 +76,6 @@ export async function serve(configPath: string) {
 
     Bun.serve({
         port: config.devServer.port,
-        hostname: config.devServer.host || 'localhost',
         tls: config.devServer.https ? await createKeys() : config.devServer.tls,
         async fetch(req) {
             const url = new URL(req.url)
@@ -129,7 +129,6 @@ export async function serve(configPath: string) {
     const wsPort = 9000
     const socketServer = Bun.serve({
         port: wsPort,
-        hostname: config.devServer.host,
         tls: config.devServer.https ? await createKeys() : config.devServer.tls,
         fetch(req, server) {
             // upgrade the request to a WebSocket

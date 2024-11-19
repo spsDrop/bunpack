@@ -6,17 +6,24 @@ const KEY_PATH = path.join(KEY_DIR, 'key.pem');
 const CSR_PATH = path.join(KEY_DIR, 'csr.pem');
 const CERT_PATH = path.join(KEY_DIR, 'cert.pem');
 
-export async function createKeys(host = 'localhost') {
+export async function createKeys(host = 'localhost', additionalHosts = [ 'localhost.adobe.com' ]) {
     const keyFile = Bun.file(KEY_PATH);
     const certFile = Bun.file(CERT_PATH);
 
     if (!(await keyFile.exists()) || !(await certFile.exists())) {
         mkdirSync(KEY_DIR);
-
-        Bun.spawnSync(`openssl genrsa -out ${KEY_PATH}`.split(' '));
-        Bun.spawnSync(`openssl req -new -key ${KEY_PATH} -out ${CSR_PATH} -subj /C=US/ST=California/CN=${host}`.split(' '));
-        Bun.spawnSync(`openssl x509 -req -days 365 -in ${CSR_PATH} -signkey ${KEY_PATH} -out ${CERT_PATH}`.split(' '));
-    
+        const altNames = additionalHosts.length === 0
+            ? ''
+            : `-extfile <(printf "subjectAltName=${additionalHosts.map(x => `DNS:${x}`).join(',')}")`;
+        const script = `
+openssl genrsa -out ${KEY_PATH};
+openssl req -new -subj "/C=US/CN=${host}" -key "${KEY_PATH}" -out "${CSR_PATH}";
+openssl x509 -req ${altNames} -days 365 -in ${CSR_PATH} -signkey ${KEY_PATH} -out ${CERT_PATH};
+`;
+        console.log('---\n Generating cert with the following script\n---');
+        console.log('script', script);
+        Bun.spawnSync(['sh', '-c', script]);
+        console.log('---\n DONE\n---');
         unlinkSync(CSR_PATH);
     }
 
