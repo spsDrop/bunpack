@@ -3,7 +3,7 @@
   "module": "./src/index.ts",
   "types": "./src/index.ts",
   "type": "module",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "bin": {
     "bunpack-build": "bin/bunpack-build.ts",
     "bunpack-serve": "bin/bunpack-serve.ts"
