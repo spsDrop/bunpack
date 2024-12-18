@@ -11,7 +11,11 @@ export async function createKeys(host = 'localhost', additionalHosts = [ 'localh
     const certFile = Bun.file(CERT_PATH);
 
     if (!(await keyFile.exists()) || !(await certFile.exists())) {
-        mkdirSync(KEY_DIR);
+        try {
+            mkdirSync(KEY_DIR);
+        } catch (e) {
+            console.warn('.cache dir already exists');
+        }
         const altNames = additionalHosts.length === 0
             ? ''
             : `-extfile <(printf "subjectAltName=${additionalHosts.map(x => `DNS:${x}`).join(',')}")`;
@@ -22,7 +26,7 @@ openssl x509 -req ${altNames} -days 365 -in ${CSR_PATH} -signkey ${KEY_PATH} -ou
 `;
         console.log('---\n Generating cert with the following script\n---');
         console.log('script', script);
-        Bun.spawnSync(['sh', '-c', script]);
+        Bun.spawnSync(['bash', '-c', script]);
         console.log('---\n DONE\n---');
         unlinkSync(CSR_PATH);
     }
